@@ -318,7 +318,11 @@ Common errors and solutions.
   - [x] Server-side proxy for CORS handling
   - [x] Dynamic parameter configuration
   - [x] Response viewer with JSON highlighting
-  - [x] Dashboard-style UI with hover effects
+  - [x] Compact dashboard-style UI with clear borders
+- [x] How It Works page - Visual architecture explanation with interactive tabs
+- [x] Tutorials page - Step-by-step implementation guides (Database, Stripe, Push Notifications, Email)
+- [x] InFiNet Code branding - Logo, company name, slogan, gift message on dashboard
+- [x] Workshop-ready README with quick start guide
 
 ## Mock Data
 
@@ -326,7 +330,7 @@ Common errors and solutions.
 - **Email**: `test@example.com`
 - **Password**: `Password123`
 
-Note: Mock data resets on server restart.
+Note: Mock data persists across hot reloads (using global state) but resets when the dev server is fully stopped and restarted.
 
 ## Session Notes
 _This section is updated each session with relevant context._
@@ -431,4 +435,25 @@ _This section is updated each session with relevant context._
 - Dynamic parameter handling for different endpoint types
 - Trafikverket uses XML query format with API key injection
 
-Last updated: 2025-12-12
+### Session 9 (2025-12-13)
+- Added InFiNet Code branding throughout the app
+  - Logo placeholder in sidebar (`/infinetcodecube.png`)
+  - Company name "InFiNet Code" and slogan "Crafting the future"
+  - Welcome gift message on dashboard for workshop attendees
+- Redesigned Dashboard page
+  - Compact layout with side-by-side welcome and gift cards
+  - Visible borders in both light and dark modes
+  - Gradient backgrounds and hover effects
+- Redesigned API Explorer for better UX
+  - Horizontal tabs for API selection
+  - 2-column layout (endpoints/request on left, response on right)
+  - Collapsible API setup banner
+  - Clear borders on all interactive elements
+- Fixed authentication token persistence bug
+  - Access tokens now stored in mockDb during refresh
+  - Mock database uses global state to persist across hot reloads
+  - User endpoints fallback to refresh token cookie
+- Created workshop-ready README.md with quick start guide
+- Updated docs/README.md as navigation hub
+
+Last updated: 2025-12-13

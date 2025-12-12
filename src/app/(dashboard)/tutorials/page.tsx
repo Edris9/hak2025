@@ -4,23 +4,18 @@ import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import {
-  Rocket,
   Database,
   CreditCard,
   Bell,
   Mail,
-  Globe,
   Smartphone,
-  ArrowRight,
   CheckCircle2,
   Code,
   FileCode,
   Lightbulb,
   AlertCircle,
   ExternalLink,
-  Copy,
   Terminal,
-  FolderTree,
   Zap,
 } from 'lucide-react';
 
@@ -233,9 +228,9 @@ export default function TutorialsPage() {
                 </p>
                 <div className="bg-muted/50 p-4 rounded-lg">
                   <p className="text-sm font-mono">
-                    <span className="text-muted-foreground">// Without Prisma (complex SQL):</span><br />
+                    <span className="text-muted-foreground">{/* Without Prisma */}Without Prisma (complex SQL):</span><br />
                     SELECT * FROM users WHERE email = &apos;test@example.com&apos;<br /><br />
-                    <span className="text-muted-foreground">// With Prisma (simple JavaScript):</span><br />
+                    <span className="text-muted-foreground">{/* With Prisma */}With Prisma (simple JavaScript):</span><br />
                     prisma.user.findUnique({'{'} where: {'{'} email: &apos;test@example.com&apos; {'}'} {'}'})
                   </p>
                 </div>

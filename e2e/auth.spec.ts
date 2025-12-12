@@ -21,7 +21,7 @@ test.describe('Authentication', () => {
         await page.getByRole('button', { name: 'Sign in' }).click();
 
         await expect(page).toHaveURL('/dashboard', { timeout: 10000 });
-        await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible();
+        await expect(page.getByRole('heading', { name: /Welcome back/ })).toBeVisible();
       });
 
       test('should show user info after successful login', async ({ page }) => {
