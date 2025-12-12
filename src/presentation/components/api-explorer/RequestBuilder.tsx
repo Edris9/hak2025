@@ -1,9 +1,7 @@
 'use client';
 
 /**
- * Request Builder Component
- *
- * Form for building API requests with parameters and body.
+ * Request Builder Component - Compact Form
  */
 
 import { Button } from '@/components/ui/button';
@@ -17,11 +15,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useAPIExplorerContext } from '@/presentation/providers/APIExplorerProvider';
 import { useExecuteAPI } from '@/presentation/hooks/useExecuteAPI';
-import { Loader2, Play } from 'lucide-react';
+import { Loader2, Play, AlertCircle } from 'lucide-react';
 
 export function RequestBuilder() {
   const {
@@ -35,27 +33,26 @@ export function RequestBuilder() {
   } = useAPIExplorerContext();
 
   const { executeRequest, isLoading } = useExecuteAPI();
-
   const apiConfig = getCurrentAPIConfig();
 
   if (!selectedAPI || !selectedEndpoint) {
     return (
-      <Card>
-        <CardContent className="py-8 text-center text-muted-foreground">
-          Select an API and endpoint to build a request
+      <Card className="border-2 border-dashed border-gray-300 dark:border-gray-600 bg-muted/30">
+        <CardContent className="py-8 text-center text-muted-foreground text-sm">
+          Select an endpoint to configure the request
         </CardContent>
       </Card>
     );
   }
 
-  // Check if API requires auth but isn't configured
   if (apiConfig?.requiresApiKey && !apiConfig.isConfigured) {
     return (
-      <Card>
-        <CardContent className="py-8 text-center">
-          <p className="text-amber-600 font-medium mb-2">API Key Required</p>
-          <p className="text-sm text-muted-foreground">
-            Add <code className="bg-muted px-1 rounded">{apiConfig.apiKeyEnvVar}</code> to your .env.local file
+      <Card className="border-2 border-amber-500/30 bg-amber-500/5">
+        <CardContent className="py-6 text-center">
+          <AlertCircle className="h-8 w-8 text-amber-500 mx-auto mb-2" />
+          <p className="font-medium text-amber-600 dark:text-amber-400">API Key Required</p>
+          <p className="text-xs text-muted-foreground mt-1">
+            Add <code className="bg-muted px-1 rounded">{apiConfig.apiKeyEnvVar}</code> to .env.local
           </p>
         </CardContent>
       </Card>
@@ -63,71 +60,73 @@ export function RequestBuilder() {
   }
 
   return (
-    <Card>
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-base">{selectedEndpoint.name}</CardTitle>
-          <Badge variant={selectedEndpoint.method === 'GET' ? 'secondary' : 'default'}>
-            {selectedEndpoint.method}
-          </Badge>
+    <Card className="border-2 border-gray-300 dark:border-gray-600">
+      <CardContent className="p-4 space-y-4">
+        {/* Header */}
+        <div className="flex items-center justify-between pb-2 border-b border-gray-200 dark:border-gray-700">
+          <div className="flex items-center gap-2">
+            <Badge variant={selectedEndpoint.method === 'GET' ? 'secondary' : 'default'} className="font-mono">
+              {selectedEndpoint.method}
+            </Badge>
+            <span className="font-medium text-sm">{selectedEndpoint.name}</span>
+          </div>
         </div>
-        <p className="text-sm text-muted-foreground">
-          {selectedEndpoint.description}
-        </p>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {/* Path */}
+
+        {/* Path Preview */}
         <div>
           <Label className="text-xs text-muted-foreground">Endpoint</Label>
-          <code className="block mt-1 p-2 bg-muted rounded text-xs break-all">
+          <code className="block mt-1 p-2 bg-muted rounded text-xs break-all font-mono">
             {selectedEndpoint.path}
           </code>
         </div>
 
-        {/* Parameters */}
+        {/* Parameters - Compact Grid */}
         {selectedEndpoint.params && selectedEndpoint.params.length > 0 && (
           <div className="space-y-3">
             <Label className="text-xs text-muted-foreground">Parameters</Label>
-            {selectedEndpoint.params.map((param) => (
-              <div key={param.name} className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <Label htmlFor={param.name} className="text-sm">
-                    {param.name}
-                    {param.required && <span className="text-destructive ml-1">*</span>}
-                  </Label>
+            <div className="grid gap-3">
+              {selectedEndpoint.params.map((param) => (
+                <div key={param.name} className="space-y-1">
+                  <div className="flex items-center gap-1">
+                    <Label htmlFor={param.name} className="text-xs font-medium">
+                      {param.name}
+                    </Label>
+                    {param.required && <span className="text-destructive text-xs">*</span>}
+                    <span className="text-[10px] text-muted-foreground ml-auto">{param.type}</span>
+                  </div>
+                  {param.options ? (
+                    <Select
+                      value={requestParams[param.name] || ''}
+                      onValueChange={(value) => updateParam(param.name, value)}
+                    >
+                      <SelectTrigger id={param.name} className="h-8 text-sm">
+                        <SelectValue placeholder={`Select ${param.name}`} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {param.options.map((option) => (
+                          <SelectItem key={option} value={option}>
+                            {option}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <Input
+                      id={param.name}
+                      type={param.type === 'number' ? 'number' : 'text'}
+                      value={requestParams[param.name] || ''}
+                      onChange={(e) => updateParam(param.name, e.target.value)}
+                      placeholder={param.default || param.description}
+                      className="h-8 text-sm"
+                    />
+                  )}
                 </div>
-                {param.options ? (
-                  <Select
-                    value={requestParams[param.name] || ''}
-                    onValueChange={(value) => updateParam(param.name, value)}
-                  >
-                    <SelectTrigger id={param.name}>
-                      <SelectValue placeholder={`Select ${param.name}`} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {param.options.map((option) => (
-                        <SelectItem key={option} value={option}>
-                          {option}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                ) : (
-                  <Input
-                    id={param.name}
-                    type={param.type === 'number' ? 'number' : 'text'}
-                    value={requestParams[param.name] || ''}
-                    onChange={(e) => updateParam(param.name, e.target.value)}
-                    placeholder={param.default || param.description}
-                  />
-                )}
-                <p className="text-xs text-muted-foreground">{param.description}</p>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         )}
 
-        {/* Body for POST requests */}
+        {/* Body for POST */}
         {selectedEndpoint.method === 'POST' && selectedEndpoint.bodyTemplate && (
           <div className="space-y-1">
             <Label htmlFor="body" className="text-xs text-muted-foreground">
@@ -137,7 +136,7 @@ export function RequestBuilder() {
               id="body"
               value={requestBody}
               onChange={(e) => setRequestBody(e.target.value)}
-              className="font-mono text-xs min-h-[150px]"
+              className="font-mono text-xs min-h-[100px] resize-none"
               placeholder="Request body..."
             />
           </div>
@@ -147,7 +146,8 @@ export function RequestBuilder() {
         <Button
           onClick={executeRequest}
           disabled={isLoading}
-          className="w-full"
+          className="w-full h-9"
+          size="sm"
         >
           {isLoading ? (
             <>

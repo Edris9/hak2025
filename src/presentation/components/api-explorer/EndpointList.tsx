@@ -1,14 +1,13 @@
 'use client';
 
 /**
- * Endpoint List Component
- *
- * List of available endpoints for the selected API.
+ * Endpoint List Component - Compact Horizontal Scroll
  */
 
 import { Badge } from '@/components/ui/badge';
 import { useAPIExplorerContext } from '@/presentation/providers/APIExplorerProvider';
 import { APIEndpoint } from '@/domain/models';
+import { ChevronRight } from 'lucide-react';
 
 export function EndpointList() {
   const {
@@ -25,8 +24,8 @@ export function EndpointList() {
 
   if (!selectedAPI || !apiConfig) {
     return (
-      <div className="text-sm text-muted-foreground text-center py-4">
-        Select an API to see endpoints
+      <div className="text-sm text-muted-foreground text-center py-6 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg bg-muted/30">
+        Select an API above to see endpoints
       </div>
     );
   }
@@ -37,7 +36,6 @@ export function EndpointList() {
     setSelectedEndpoint(endpoint);
     clearResponse();
 
-    // Set default parameters
     const defaultParams: Record<string, string> = {};
     endpoint.params?.forEach((param) => {
       if (param.default) {
@@ -45,17 +43,16 @@ export function EndpointList() {
       }
     });
     setRequestParams(defaultParams);
-
-    // Set default body
     setRequestBody(endpoint.bodyTemplate || '');
   };
 
   return (
     <div className="space-y-2">
-      <h3 className="text-sm font-medium text-muted-foreground px-1">
-        Endpoints <span className="text-xs font-normal">(click to select)</span>
-      </h3>
-      <div className="space-y-1.5">
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-medium">Endpoints</h3>
+        <span className="text-xs text-muted-foreground">{apiConfig.endpoints.length} available</span>
+      </div>
+      <div className="grid gap-2">
         {apiConfig.endpoints.map((endpoint) => {
           const isSelected = selectedEndpoint?.id === endpoint.id;
 
@@ -63,24 +60,25 @@ export function EndpointList() {
             <button
               key={endpoint.id}
               onClick={() => handleSelectEndpoint(endpoint)}
-              className={`w-full text-left p-3 rounded-lg border-2 cursor-pointer transition-all duration-200 ${
+              className={`w-full text-left px-3 py-2 rounded-lg border-2 transition-all duration-200 group ${
                 isSelected
-                  ? 'bg-primary/10 text-primary border-primary shadow-sm'
-                  : 'border-border hover:border-primary/50 hover:bg-accent/50 hover:shadow-sm hover:-translate-y-0.5 text-foreground'
+                  ? 'bg-primary/10 border-primary shadow-sm'
+                  : 'border-gray-300 dark:border-gray-600 bg-card hover:border-primary/50 hover:bg-accent/50'
               }`}
             >
               <div className="flex items-center gap-2">
                 <Badge
                   variant={endpoint.method === 'GET' ? 'secondary' : 'default'}
-                  className="text-[10px] px-1.5 py-0"
+                  className="text-[10px] px-1.5 py-0 h-4 font-mono"
                 >
                   {endpoint.method}
                 </Badge>
-                <span className="text-sm font-medium truncate">
+                <span className={`text-sm font-medium flex-1 truncate ${isSelected ? 'text-primary' : ''}`}>
                   {endpoint.name}
                 </span>
+                <ChevronRight className={`h-4 w-4 transition-transform ${isSelected ? 'text-primary' : 'text-muted-foreground opacity-0 group-hover:opacity-100'}`} />
               </div>
-              <p className="text-xs text-muted-foreground mt-1 line-clamp-1">
+              <p className="text-xs text-muted-foreground mt-0.5 truncate pl-12">
                 {endpoint.description}
               </p>
             </button>

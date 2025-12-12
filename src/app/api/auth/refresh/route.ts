@@ -52,8 +52,12 @@ export async function POST(request: NextRequest) {
     const newRefreshToken = generateToken();
     mockDb.refreshTokens.set(newRefreshToken, userId);
 
-    // Generate new access token
+    // Invalidate old access tokens for this user
+    mockDb.accessTokens.deleteByUserId(userId);
+
+    // Generate new access token and store it
     const accessToken = generateToken();
+    mockDb.accessTokens.set(accessToken, userId);
 
     const response: RefreshResponse = {
       accessToken,

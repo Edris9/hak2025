@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/sidebar';
 import { Home, MessageSquare, ImageIcon, Volume2, Globe, BookOpen, GraduationCap } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { UserNav } from './UserNav';
 
@@ -32,8 +33,21 @@ export function AppSidebar() {
 
   return (
     <Sidebar>
-      <SidebarHeader className="border-b px-6 py-4">
-        <h2 className="text-lg font-semibold">Clean App</h2>
+      <SidebarHeader className="border-b px-4 py-4">
+        <Link href="/dashboard" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+          {/* Replace /logo.svg with your own logo */}
+          <Image
+            src="/infinetcodecube.png"
+            alt="InFiNet Code"
+            width={40}
+            height={40}
+            className="rounded-lg"
+          />
+          <div className="flex flex-col">
+            <span className="font-bold text-lg leading-tight">InFiNet Code</span>
+            <span className="text-xs text-muted-foreground">Crafting the future</span>
+          </div>
+        </Link>
       </SidebarHeader>
 
       <SidebarContent>

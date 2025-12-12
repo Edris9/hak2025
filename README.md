@@ -1,6 +1,8 @@
-# Welcome to Your Next.js AI Workshop Template!
+# InFiNet Code - Next.js AI Workshop Template
 
-Hey there! If you're reading this, you're probably about to build something awesome. This template gives you everything you need to create a modern web app with AI features, authentication, and real Swedish public APIs.
+> *Crafting the future*
+
+Hey there! Welcome to this Next.js AI Workshop Template, a gift from the team at **InFiNet Code**. This template gives you everything you need to create a modern web app with AI features, authentication, and real Swedish public APIs.
 
 **No prior experience required** - just follow along and you'll have a working app in no time!
 
@@ -245,6 +247,14 @@ Built with:
 - [Tailwind CSS](https://tailwindcss.com/) - Styling
 - [TanStack Query](https://tanstack.com/query/) - Data fetching
 - Swedish Public APIs - SMHI, Polisen, SCB, Trafikverket, JobTech, Goteborg Stad
+
+---
+
+## About InFiNet Code
+
+This template is brought to you by **InFiNet Code** - *Crafting the future*.
+
+We build tools and templates to help developers create amazing products faster.
 
 ---
 

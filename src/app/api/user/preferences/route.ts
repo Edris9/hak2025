@@ -4,12 +4,23 @@ import { UserPreferences } from '@/domain/models';
 import { mockDb } from '@/app/api/auth/mock-db';
 
 function getUserIdFromToken(request: NextRequest): string | null {
+  // First try access token from Authorization header
   const authHeader = request.headers.get('authorization');
-  if (!authHeader?.startsWith('Bearer ')) {
-    return null;
+  if (authHeader?.startsWith('Bearer ')) {
+    const token = authHeader.substring(7);
+    const userId = mockDb.accessTokens.get(token);
+    if (userId) {
+      return userId;
+    }
   }
-  const token = authHeader.substring(7);
-  return mockDb.accessTokens.get(token) || null;
+
+  // Fallback to refresh token from cookie (for cases where access token is out of sync)
+  const refreshToken = request.cookies.get('refreshToken')?.value;
+  if (refreshToken) {
+    return mockDb.refreshTokens.get(refreshToken) || null;
+  }
+
+  return null;
 }
 
 const validLanguages = ['en', 'sv', 'de', 'fr', 'es'];
