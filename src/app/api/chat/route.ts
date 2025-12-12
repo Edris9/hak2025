@@ -1,40 +1,42 @@
-import { NextRequest } from 'next/server';
 import { AIProviderFactory } from '@/infrastructure/services/ai';
 import { AI_PROVIDERS, createChatMessage, ChatMessage } from '@/domain/models';
-import { SendMessageRequest, ChatErrorResponse } from '@/application/dto';
+import {
+  withSecurity,
+  SecureRequest,
+  ValidatedChatRequest,
+  filterOutput,
+  wrapSystemPrompt,
+} from '@/infrastructure/security';
 
 /**
  * POST /api/chat
  *
- * Send a message to the AI and receive a streaming response.
- * Uses Server-Sent Events (SSE) for real-time token streaming.
+ * Secure AI chat endpoint with:
+ * - Rate limiting (30 req/min per IP)
+ * - Input validation (max 10K chars, max 50 history messages)
+ * - Prompt injection protection
+ * - Output filtering (sensitive data redaction)
+ * - Sanitized error responses
  *
  * Request body:
- * - message: The user's message
- * - history: Previous messages in the conversation
- * - provider: (optional) Specific provider to use
+ * - message: The user's message (required, max 10000 chars)
+ * - history: Previous messages in the conversation (optional, max 50)
+ * - provider: Specific provider to use (optional)
  *
  * Response:
  * - Stream of SSE events with type: 'token' | 'complete' | 'error'
+ * - X-Request-ID header for request tracking
+ * - X-RateLimit-Remaining header showing remaining quota
  */
-export async function POST(request: NextRequest) {
-  try {
-    const body: SendMessageRequest = await request.json();
+export const POST = withSecurity<ValidatedChatRequest>(
+  {
+    modality: 'text-chat',
+    validateInput: true,
+    requireAuth: false, // Anonymous access for workshop convenience
+  },
+  async (request: SecureRequest, body: ValidatedChatRequest) => {
     const { message, history, provider: requestedProvider } = body;
-
-    // Validate message
-    if (!message || typeof message !== 'string' || message.trim().length === 0) {
-      const errorResponse: ChatErrorResponse = {
-        error: {
-          code: 'INVALID_REQUEST',
-          message: 'Message is required',
-        },
-      };
-      return new Response(JSON.stringify(errorResponse), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' },
-      });
-    }
+    const { requestId } = request;
 
     // Get the provider
     let provider;
@@ -42,17 +44,19 @@ export async function POST(request: NextRequest) {
       provider = AIProviderFactory.getProvider(requestedProvider);
       if (!provider.isConfigured()) {
         const config = AI_PROVIDERS[requestedProvider];
-        const errorResponse: ChatErrorResponse = {
-          error: {
-            code: 'NO_PROVIDER_CONFIGURED',
-            message: `${config.name} is not configured. Please add your API key.`,
-            instructions: config.apiKeyInstructions,
-          },
-        };
-        return new Response(JSON.stringify(errorResponse), {
-          status: 400,
-          headers: { 'Content-Type': 'application/json' },
-        });
+        return new Response(
+          JSON.stringify({
+            error: {
+              code: 'NO_PROVIDER_CONFIGURED',
+              message: `${config.name} is not configured. Please add your API key.`,
+              requestId,
+            },
+          }),
+          {
+            status: 400,
+            headers: { 'Content-Type': 'application/json' },
+          }
+        );
       }
     } else {
       provider = AIProviderFactory.getDefaultProvider();
@@ -66,26 +70,31 @@ export async function POST(request: NextRequest) {
         '',
       ]);
 
-      const errorResponse: ChatErrorResponse = {
-        error: {
-          code: 'NO_PROVIDER_CONFIGURED',
-          message:
-            'No AI provider is configured. Please add an API key for at least one provider.',
-          instructions: allInstructions,
-        },
-      };
-      return new Response(JSON.stringify(errorResponse), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' },
-      });
+      return new Response(
+        JSON.stringify({
+          error: {
+            code: 'NO_PROVIDER_CONFIGURED',
+            message: 'No AI provider is configured. Please add an API key for at least one provider.',
+            instructions: allInstructions,
+            requestId,
+          },
+        }),
+        {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' },
+        }
+      );
     }
 
-    // Build conversation history
+    // Build conversation with protected system prompt
+    const systemPrompt = wrapSystemPrompt(
+      'You are a helpful AI assistant. Answer questions accurately and helpfully.'
+    );
+
     const messages: ChatMessage[] = [
-      ...(history || []).map((msg) =>
-        createChatMessage(msg.role, msg.content)
-      ),
-      createChatMessage('user', message.trim()),
+      createChatMessage('system', systemPrompt),
+      ...(history || []).map((msg) => createChatMessage(msg.role, msg.content)),
+      createChatMessage('user', message),
     ];
 
     // Create a streaming response using SSE
@@ -93,7 +102,17 @@ export async function POST(request: NextRequest) {
     const stream = new ReadableStream({
       async start(controller) {
         const sendEvent = (type: string, data: string) => {
-          const event = JSON.stringify({ type, data, provider: provider!.type });
+          // Filter output to remove sensitive data
+          const filteredData = type === 'token' || type === 'complete'
+            ? filterOutput(data)
+            : data;
+
+          const event = JSON.stringify({
+            type,
+            data: filteredData,
+            provider: provider!.type,
+            requestId,
+          });
           controller.enqueue(encoder.encode(`data: ${event}\n\n`));
         };
 
@@ -107,14 +126,16 @@ export async function POST(request: NextRequest) {
               controller.close();
             },
             onError: (error) => {
-              sendEvent('error', error.message);
+              // Never expose raw error messages
+              console.error(`[${requestId}] Provider error:`, error);
+              sendEvent('error', 'An error occurred while generating the response.');
               controller.close();
             },
           });
         } catch (error) {
-          const errorMessage =
-            error instanceof Error ? error.message : 'Unknown error occurred';
-          sendEvent('error', errorMessage);
+          // Never expose raw error messages
+          console.error(`[${requestId}] Stream error:`, error);
+          sendEvent('error', 'An error occurred. Please try again.');
           controller.close();
         }
       },
@@ -123,21 +144,10 @@ export async function POST(request: NextRequest) {
     return new Response(stream, {
       headers: {
         'Content-Type': 'text/event-stream',
-        'Cache-Control': 'no-cache',
-        Connection: 'keep-alive',
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Connection': 'keep-alive',
+        'X-Request-ID': requestId,
       },
-    });
-  } catch (error) {
-    console.error('Chat API error:', error);
-    const errorResponse: ChatErrorResponse = {
-      error: {
-        code: 'PROVIDER_ERROR',
-        message: error instanceof Error ? error.message : 'An unexpected error occurred',
-      },
-    };
-    return new Response(JSON.stringify(errorResponse), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
     });
   }
-}
+);

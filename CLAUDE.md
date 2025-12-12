@@ -266,6 +266,14 @@ Common errors and solutions.
   - [x] Streaming responses (SSE)
   - [x] Provider switching
   - [x] Setup instructions when no provider configured
+  - [x] Security hardening
+    - [x] Rate limiting (30 req/min per IP)
+    - [x] Prompt injection protection
+    - [x] Output filtering (sensitive data redaction)
+    - [x] System prompt protection
+    - [x] Error sanitization (no internal details exposed)
+    - [x] Request validation (size limits, schema validation)
+  - [x] Generic modality architecture (ready for image gen, TTS)
 
 ## Mock Data
 
@@ -312,5 +320,21 @@ _This section is updated each session with relevant context._
 - Updated sidebar navigation with AI Chat link
 - Installed @google/generative-ai SDK
 - Created comprehensive documentation in docs/features/ai-chat/
+
+### Session 5 (2024-12-12)
+- Fixed Gemini 404 error by updating from retired 1.5 models to 2.0
+- Updated all AI provider models to latest versions
+- Added comprehensive security hardening for AI Chat:
+  - Created security module (`src/infrastructure/security/`)
+  - Implemented rate limiting (in-memory, 30 req/min per IP)
+  - Added Edge middleware for first-line defense
+  - Created prompt injection protection with pattern detection
+  - Added output filtering to redact sensitive data (API keys, file paths)
+  - Implemented system prompt protection wrapper
+  - Created sanitized error responses (never expose internals)
+  - Added request validation with Zod schemas
+  - Created `withSecurity` HOF for route handlers
+- Created generic AI modality architecture for future image gen and TTS
+- Updated documentation with security section
 
 Last updated: 2024-12-12

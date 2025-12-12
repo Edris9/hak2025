@@ -425,3 +425,159 @@ test.describe('AI Chat', () => {
 | OpenAI | `gpt-4.1-mini` | Replaced GPT-4o |
 | Google | `gemini-2.0-flash` | Gemini 1.5 retired |
 | Mistral | `mistral-small-latest` | Auto-updating alias |
+
+## Security
+
+The AI Chat feature includes comprehensive security measures to protect against common attack vectors.
+
+### Security Architecture
+
+```
+src/infrastructure/security/
+├── errors/
+│   └── sanitizedErrors.ts     # Safe error responses
+├── validation/
+│   ├── requestValidator.ts    # Size limits, schema validation
+│   ├── inputSanitizer.ts      # Prompt injection protection
+│   ├── outputFilter.ts        # Sensitive data filtering
+│   └── systemPromptProtection.ts  # System prompt defense
+├── middleware/
+│   ├── rateLimiter.ts         # Rate limiting logic
+│   └── withSecurity.ts        # Security HOF wrapper
+└── index.ts                   # Centralized exports
+```
+
+### Security Features
+
+#### 1. Rate Limiting
+- **Per-IP**: 30 requests/minute (anonymous users)
+- **Per-User**: 60 requests/minute (authenticated users - reserved for future)
+- In-memory sliding window implementation
+- Edge middleware (`src/middleware.ts`) provides first-line defense
+- Returns 429 with `Retry-After` header when limited
+
+#### 2. Input Validation
+- Maximum message length: 10,000 characters
+- Maximum history: 50 messages
+- Maximum request body: 1MB
+- Zod schema validation for all requests
+- Early rejection of oversized requests
+
+#### 3. Prompt Injection Protection
+Detects and blocks common injection patterns:
+- Instruction override attempts ("ignore previous instructions")
+- Role manipulation ("you are now a different AI")
+- Prompt extraction attempts ("reveal your system prompt")
+- Delimiter injection attempts
+
+The sanitizer:
+- Removes control characters
+- Limits consecutive newlines
+- Flags suspicious patterns for monitoring
+- Blocks confirmed injection attempts
+
+#### 4. Output Filtering
+Automatically redacts sensitive data from AI responses:
+- API keys (patterns: `sk-*`, `sk-ant-*`, `AIza*`, etc.)
+- File paths (Windows and Unix)
+- Internal IP addresses (192.168.x.x, 10.x.x.x, etc.)
+- Database connection strings
+- AWS/Azure secrets
+
+#### 5. System Prompt Protection
+System prompts are wrapped with defensive instructions:
+```typescript
+const securePrompt = wrapSystemPrompt(
+  'You are a helpful AI assistant.'
+);
+// Adds instructions to never reveal system prompt or change persona
+```
+
+#### 6. Error Sanitization
+Internal errors are never exposed to clients:
+- Stack traces are filtered
+- File paths are removed
+- Provider-specific errors are generalized
+- Each error gets a unique `requestId` for tracking
+
+### Security Middleware
+
+The `withSecurity` HOF wraps route handlers:
+
+```typescript
+export const POST = withSecurity<ValidatedChatRequest>(
+  {
+    modality: 'text-chat',
+    validateInput: true,
+    requireAuth: false, // Workshop convenience
+  },
+  async (request, body) => {
+    // Handler receives validated, sanitized input
+  }
+);
+```
+
+The middleware automatically:
+1. Generates unique request ID
+2. Validates request size
+3. Applies rate limiting
+4. Parses and validates body
+5. Sanitizes input for injection
+6. Executes handler with timeout
+7. Catches and sanitizes errors
+
+### Rate Limit Configuration
+
+| Modality | Per-IP | Per-User (Future) |
+|----------|--------|-------------------|
+| text-chat | 30/min | 60/min |
+| image-generation | 10/min | 20/min |
+| text-to-speech | 20/min | 40/min |
+
+### Security Headers
+
+Edge middleware adds security headers to all responses:
+- `X-Content-Type-Options: nosniff`
+- `X-Frame-Options: DENY`
+- `X-XSS-Protection: 1; mode=block`
+- `Referrer-Policy: strict-origin-when-cross-origin`
+- `X-Request-ID: <uuid>` (for tracking)
+- `X-RateLimit-Remaining: <number>`
+
+### Adding Security to New Modalities
+
+When adding image generation or TTS, use the same security patterns:
+
+```typescript
+// Image generation route
+export const POST = withSecurity<ValidatedImageRequest>(
+  { modality: 'image-generation', validateInput: true },
+  async (request, body) => {
+    // body is validated and sanitized
+  }
+);
+```
+
+Validation schemas for new modalities are pre-defined:
+- `imageRequestSchema` - for image generation
+- `ttsRequestSchema` - for text-to-speech
+
+### Monitoring
+
+Security events are logged with request IDs:
+```
+[req_abc123] Suspicious input detected: delimiter_injection
+[req_def456] Rate limit exceeded for IP: 203.0.113.50
+[req_ghi789] Provider error sanitized: OpenAI API timeout
+```
+
+Use request IDs to trace issues without exposing internal details to users.
+
+### Production Recommendations
+
+For production deployments:
+1. **Replace in-memory rate limiter** with Redis or Vercel KV
+2. **Add authentication** for higher rate limits
+3. **Enable CORS** for specific origins only
+4. **Use WAF** (Web Application Firewall) for additional protection
+5. **Monitor security logs** for patterns
