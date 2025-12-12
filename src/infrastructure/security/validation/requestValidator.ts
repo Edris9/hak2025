@@ -65,22 +65,21 @@ export const chatRequestSchema = z.object({
 export type ValidatedChatRequest = z.infer<typeof chatRequestSchema>;
 
 /**
- * Image generation request schema (for future use)
+ * Image generation request schema
  */
 export const imageRequestSchema = z.object({
   prompt: z
     .string()
     .min(1, 'Prompt is required')
     .max(LIMITS.image.maxPromptLength, `Prompt exceeds ${LIMITS.image.maxPromptLength} characters`),
-  size: z.enum(['256x256', '512x512', '1024x1024']).optional().default('512x512'),
-  n: z.number().min(1).max(4).optional().default(1),
-  provider: z.enum(['openai', 'stability'] as const).optional(),
+  size: z.enum(['256x256', '512x512', '1024x1024', '1792x1024', '1024x1792']).optional().default('1024x1024'),
+  provider: z.enum(['openai', 'gemini'] as const).optional(),
 });
 
 export type ValidatedImageRequest = z.infer<typeof imageRequestSchema>;
 
 /**
- * Text-to-speech request schema (for future use)
+ * Text-to-speech request schema
  */
 export const ttsRequestSchema = z.object({
   text: z
@@ -89,7 +88,7 @@ export const ttsRequestSchema = z.object({
     .max(LIMITS.tts.maxTextLength, `Text exceeds ${LIMITS.tts.maxTextLength} characters`),
   voice: z.string().optional(),
   speed: z.number().min(0.5).max(2.0).optional().default(1.0),
-  provider: z.enum(['openai', 'elevenlabs', 'google'] as const).optional(),
+  provider: z.enum(['openai', 'elevenlabs'] as const).optional(),
 });
 
 export type ValidatedTTSRequest = z.infer<typeof ttsRequestSchema>;
@@ -158,6 +157,44 @@ export function validateChatRequest(body: unknown): ValidationResult<ValidatedCh
     return {
       success: false,
       error: 'Conversation history is too large',
+    };
+  }
+
+  return {
+    success: true,
+    data: result.data,
+  };
+}
+
+/**
+ * Validate image generation request
+ */
+export function validateImageRequest(body: unknown): ValidationResult<ValidatedImageRequest> {
+  const result = imageRequestSchema.safeParse(body);
+  if (!result.success) {
+    const firstError = result.error.issues[0];
+    return {
+      success: false,
+      error: firstError?.message || 'Invalid request',
+    };
+  }
+
+  return {
+    success: true,
+    data: result.data,
+  };
+}
+
+/**
+ * Validate TTS request
+ */
+export function validateTTSRequest(body: unknown): ValidationResult<ValidatedTTSRequest> {
+  const result = ttsRequestSchema.safeParse(body);
+  if (!result.success) {
+    const firstError = result.error.issues[0];
+    return {
+      success: false,
+      error: firstError?.message || 'Invalid request',
     };
   }
 

@@ -12,7 +12,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from '@/components/ui/sidebar';
-import { Home, Settings, FileText, Users, MessageSquare } from 'lucide-react';
+import { Home, MessageSquare, ImageIcon, Volume2, Globe, BookOpen, GraduationCap } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { UserNav } from './UserNav';
@@ -20,9 +20,11 @@ import { UserNav } from './UserNav';
 const menuItems = [
   { title: 'Dashboard', icon: Home, href: '/dashboard' },
   { title: 'AI Chat', icon: MessageSquare, href: '/chat' },
-  { title: 'Documents', icon: FileText, href: '/documents' },
-  { title: 'Team', icon: Users, href: '/team' },
-  { title: 'Settings', icon: Settings, href: '/settings' },
+  { title: 'Image Gen', icon: ImageIcon, href: '/image-gen' },
+  { title: 'Text to Speech', icon: Volume2, href: '/text-to-speech' },
+  { title: 'API Explorer', icon: Globe, href: '/api-explorer' },
+  { title: 'How It Works', icon: BookOpen, href: '/how-it-works' },
+  { title: 'Tutorials', icon: GraduationCap, href: '/tutorials' },
 ];
 
 export function AppSidebar() {

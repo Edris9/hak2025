@@ -29,6 +29,8 @@ export {
   validateRequestSize,
   validateHistorySize,
   validateChatRequest,
+  validateImageRequest,
+  validateTTSRequest,
   calculateHistorySize,
 } from './validation/requestValidator';
 

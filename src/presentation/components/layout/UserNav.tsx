@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useTheme } from 'next-themes';
-import { LogOut, Moon, Sun, User, Settings, ChevronUp } from 'lucide-react';
+import { LogOut, Moon, Sun, Settings, ChevronUp } from 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
   DropdownMenu,
@@ -60,13 +60,6 @@ export function UserNav() {
       >
         <DropdownMenuLabel>My Account</DropdownMenuLabel>
         <DropdownMenuSeparator />
-
-        <DropdownMenuItem asChild>
-          <Link href="/settings/account">
-            <User className="mr-2 h-4 w-4" />
-            Profile
-          </Link>
-        </DropdownMenuItem>
 
         <DropdownMenuItem asChild>
           <Link href="/settings">

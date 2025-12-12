@@ -24,7 +24,11 @@ import {
 import {
   validateRequestSize,
   validateChatRequest,
+  validateImageRequest,
+  validateTTSRequest,
   ValidatedChatRequest,
+  ValidatedImageRequest,
+  ValidatedTTSRequest,
   LIMITS,
 } from '../validation/requestValidator';
 import {
@@ -201,39 +205,95 @@ export function withSecurity<T = ValidatedChatRequest>(
 
       // 4. Validate request body
       let validatedBody: T;
-      if (validateInput && modality === 'text-chat') {
-        const validation = validateChatRequest(body);
-        if (!validation.success) {
-          return createBadRequestResponse(
-            requestId,
-            validation.error || 'Invalid request'
-          );
+      if (validateInput) {
+        if (modality === 'text-chat') {
+          const validation = validateChatRequest(body);
+          if (!validation.success) {
+            return createBadRequestResponse(
+              requestId,
+              validation.error || 'Invalid request'
+            );
+          }
+          validatedBody = validation.data as T;
+        } else if (modality === 'image-generation') {
+          const validation = validateImageRequest(body);
+          if (!validation.success) {
+            return createBadRequestResponse(
+              requestId,
+              validation.error || 'Invalid request'
+            );
+          }
+          validatedBody = validation.data as T;
+        } else if (modality === 'text-to-speech') {
+          const validation = validateTTSRequest(body);
+          if (!validation.success) {
+            return createBadRequestResponse(
+              requestId,
+              validation.error || 'Invalid request'
+            );
+          }
+          validatedBody = validation.data as T;
+        } else {
+          validatedBody = body as T;
         }
-        validatedBody = validation.data as T;
       } else {
         validatedBody = body as T;
       }
 
-      // 5. Prompt injection check (for text chat)
-      if (
-        validateInput &&
-        modality === 'text-chat' &&
-        validatedBody &&
-        typeof (validatedBody as unknown as ValidatedChatRequest).message === 'string'
-      ) {
-        const chatBody = validatedBody as unknown as ValidatedChatRequest;
-        const sanitizationResult = sanitizePrompt(chatBody.message);
+      // 5. Prompt injection check (for text chat and image generation)
+      if (validateInput && validatedBody) {
+        if (
+          modality === 'text-chat' &&
+          typeof (validatedBody as unknown as ValidatedChatRequest).message === 'string'
+        ) {
+          const chatBody = validatedBody as unknown as ValidatedChatRequest;
+          const sanitizationResult = sanitizePrompt(chatBody.message);
 
-        // Log any flags for monitoring
-        logSanitizationResult(requestId, sanitizationResult);
+          // Log any flags for monitoring
+          logSanitizationResult(requestId, sanitizationResult);
 
-        // Block if injection detected
-        if (sanitizationResult.blocked) {
-          return createBlockedResponse(requestId);
+          // Block if injection detected
+          if (sanitizationResult.blocked) {
+            return createBlockedResponse(requestId);
+          }
+
+          // Use sanitized message
+          chatBody.message = sanitizationResult.sanitized;
+        } else if (
+          modality === 'image-generation' &&
+          typeof (validatedBody as unknown as ValidatedImageRequest).prompt === 'string'
+        ) {
+          const imageBody = validatedBody as unknown as ValidatedImageRequest;
+          const sanitizationResult = sanitizePrompt(imageBody.prompt);
+
+          // Log any flags for monitoring
+          logSanitizationResult(requestId, sanitizationResult);
+
+          // Block if injection detected
+          if (sanitizationResult.blocked) {
+            return createBlockedResponse(requestId);
+          }
+
+          // Use sanitized prompt
+          imageBody.prompt = sanitizationResult.sanitized;
+        } else if (
+          modality === 'text-to-speech' &&
+          typeof (validatedBody as unknown as ValidatedTTSRequest).text === 'string'
+        ) {
+          const ttsBody = validatedBody as unknown as ValidatedTTSRequest;
+          const sanitizationResult = sanitizePrompt(ttsBody.text);
+
+          // Log any flags for monitoring
+          logSanitizationResult(requestId, sanitizationResult);
+
+          // Block if injection detected
+          if (sanitizationResult.blocked) {
+            return createBlockedResponse(requestId);
+          }
+
+          // Use sanitized text
+          ttsBody.text = sanitizationResult.sanitized;
         }
-
-        // Use sanitized message
-        chatBody.message = sanitizationResult.sanitized;
       }
 
       // 6. Create secure request object

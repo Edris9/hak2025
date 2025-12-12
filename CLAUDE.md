@@ -117,6 +117,18 @@ Inner layers know nothing about outer layers.
 - `POST /api/chat` - Send message with streaming response (SSE)
 - `GET /api/chat/providers` - Get available AI providers and configuration status
 
+### Image Generation
+- `POST /api/image` - Generate image from prompt (JSON response)
+- `GET /api/image/providers` - Get available image providers and configuration status
+
+### Text-to-Speech
+- `POST /api/tts` - Generate speech from text (returns audio base64)
+- `GET /api/tts/providers` - Get available TTS providers and configuration status
+
+### Swedish APIs Explorer
+- `GET /api/swedish-apis` - Get available Swedish APIs and endpoints
+- `POST /api/swedish-apis/execute` - Execute request through server proxy
+
 ## Environment Variables
 ```
 NEXT_PUBLIC_API_URL=http://localhost:3000/api
@@ -127,6 +139,13 @@ OPENAI_API_KEY=
 GEMINI_API_KEY=
 MISTRAL_API_KEY=
 AI_PROVIDER=        # Optional: force specific provider
+
+# TTS (Text-to-Speech)
+ELEVENLABS_API_KEY=
+
+# Swedish APIs
+TRAFIKVERKET_API_KEY=  # Optional: for Trafikverket traffic data
+GOTEBORG_API_KEY=      # Optional: for Göteborg Stad city data
 ```
 
 ## Commands
@@ -274,6 +293,32 @@ Common errors and solutions.
     - [x] Error sanitization (no internal details exposed)
     - [x] Request validation (size limits, schema validation)
   - [x] Generic modality architecture (ready for image gen, TTS)
+- [x] Image Generation with multiple providers
+  - [x] OpenAI DALL-E 3 support
+  - [x] Google Imagen 3 support
+  - [x] Provider switching
+  - [x] Setup instructions when no provider configured
+  - [x] Security hardening (rate limiting 10 req/min, prompt validation)
+  - [x] Download generated images
+- [x] Text-to-Speech with multiple providers
+  - [x] OpenAI TTS support (tts-1 model, 6 voices)
+  - [x] ElevenLabs support (eleven_multilingual_v2, 12 voices)
+  - [x] Provider and voice switching
+  - [x] Setup instructions when no provider configured
+  - [x] Security hardening (rate limiting 20 req/min, input validation)
+  - [x] Audio playback controls
+  - [x] Download generated audio
+- [x] Swedish Public APIs Explorer
+  - [x] SMHI Weather API (5 endpoints, no auth)
+  - [x] Polisen Police Events API (5 endpoints, no auth)
+  - [x] JobTech Job Search API (5 endpoints, no auth)
+  - [x] SCB Statistics API (5 endpoints, no auth)
+  - [x] Trafikverket Traffic API (7 endpoints, requires free API key)
+  - [x] Göteborg Stad City API (5 endpoints, requires free API key)
+  - [x] Server-side proxy for CORS handling
+  - [x] Dynamic parameter configuration
+  - [x] Response viewer with JSON highlighting
+  - [x] Dashboard-style UI with hover effects
 
 ## Mock Data
 
@@ -337,4 +382,53 @@ _This section is updated each session with relevant context._
 - Created generic AI modality architecture for future image gen and TTS
 - Updated documentation with security section
 
-Last updated: 2024-12-12
+### Session 6 (2025-12-12)
+- Implemented Image Generation feature with Clean Architecture
+- Added support for 2 providers: OpenAI DALL-E 3, Google Imagen 3
+- Created ImageProviderFactory with plug-and-play provider architecture
+- Created ImageGenProvider context for UI state management
+- Added useGenerateImage, useImageProviders hooks
+- Created image-gen UI components (ImageGenInput, ImageDisplay, ImageProviderSelector, ImageProviderSetup)
+- Added /api/image POST endpoint with security (rate limiting 10/min, prompt validation)
+- Added /api/image/providers GET endpoint
+- Created /image-gen page with dedicated UI
+- Updated sidebar navigation with Image Gen link
+- Extended withSecurity middleware to support image-generation modality
+- Reused existing API keys (OPENAI_API_KEY, GEMINI_API_KEY)
+
+### Session 7 (2025-12-12)
+- Implemented Text-to-Speech feature with Clean Architecture
+- Added support for 2 providers: OpenAI TTS, ElevenLabs
+- Created TTSProviderFactory with plug-and-play provider architecture
+- Created TTSProvider context for UI state management
+- Added useGenerateSpeech, useTTSProviders hooks
+- Created TTS UI components (TTSInput, AudioPlayer, TTSProviderSelector, TTSProviderSetup)
+- Added /api/tts POST endpoint with security (rate limiting 20/min, input validation)
+- Added /api/tts/providers GET endpoint
+- Created /text-to-speech page with dedicated UI
+- Updated sidebar navigation with Text to Speech link
+- Extended withSecurity middleware to support text-to-speech modality
+- Uses OPENAI_API_KEY (shared) and ELEVENLABS_API_KEY (new)
+- Audio returned as base64 data URLs for browser playback
+- Voice selection per provider
+
+### Session 8 (2025-12-12)
+- Implemented Swedish Public APIs Explorer feature
+- Added support for 4 Swedish public APIs:
+  - SMHI (weather data, 5 endpoints, no auth)
+  - Polisen (police events, 5 endpoints, no auth)
+  - SCB (statistics, 5 endpoints, no auth)
+  - Trafikverket (traffic data, 7 endpoints, requires free API key)
+- Created SwedishAPIFactory with plug-and-play service architecture
+- Created APIExplorerProvider context for UI state management
+- Added useSwedishAPIs, useExecuteAPI hooks
+- Created API Explorer UI components (APISelector, EndpointList, RequestBuilder, ResponseViewer, APISetup)
+- Added /api/swedish-apis GET endpoint (list available APIs)
+- Added /api/swedish-apis/execute POST endpoint (proxy requests to avoid CORS)
+- Created /api-explorer page with dashboard-style 3-column layout
+- Updated sidebar navigation with API Explorer link
+- Server-side proxy handles CORS and keeps API keys secure
+- Dynamic parameter handling for different endpoint types
+- Trafikverket uses XML query format with API key injection
+
+Last updated: 2025-12-12

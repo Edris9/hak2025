@@ -11,7 +11,9 @@
       "Bash(npm run test:run:*)",
       "Bash(npm run test:e2e:*)",
       "Bash(npx playwright test:*)",
-      "WebSearch"
+      "WebSearch",
+      "WebFetch(domain:jobsearch.api.jobtechdev.se)",
+      "WebFetch(domain:data.goteborg.se)"
     ]
   }
 }
