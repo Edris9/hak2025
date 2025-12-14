@@ -1,6 +1,6 @@
 'use client';
 
-import { CVUpload } from '@/presentation/components/lemowork';
+import { CVUpload, JobsList } from '@/presentation/components/lemowork';
 
 export default function MyPage() {
   return (
@@ -9,7 +9,11 @@ export default function MyPage() {
         <h1 className="text-2xl font-bold">LEMOWork</h1>
         <p className="text-muted-foreground mt-2">Välkommen till min sida!</p>
       </div>
-      <CVUpload />
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <CVUpload />
+        <JobsList />
+      </div>
     </div>
   )
 }

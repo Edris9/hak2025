@@ -12,7 +12,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from '@/components/ui/sidebar';
-import { Home, MessageSquare, ImageIcon, Volume2, Globe, BookOpen, GraduationCap, Monitor } from 'lucide-react';
+import { Home, MessageSquare, ImageIcon, Volume2, Globe, BookOpen, GraduationCap, ClipboardList } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
@@ -21,7 +21,7 @@ import { UserNav } from './UserNav';
 const menuItems = [
   { title: 'Dashboard', icon: Home, href: '/dashboard' },
   { title: 'AI Chat', icon: MessageSquare, href: '/chat' },
-  { title: 'LEMOWork', icon: Monitor, href: '/mypage' },
+  { title: 'LEMO Work', icon: ClipboardList, href: '/mypage' },
   { title: 'Image Gen', icon: ImageIcon, href: '/image-gen' },
   { title: 'Text to Speech', icon: Volume2, href: '/text-to-speech' },
   { title: 'API Explorer', icon: Globe, href: '/api-explorer' },
