@@ -13,7 +13,12 @@ interface ExtractedInfo {
   email: string;
 }
 
-export function CVUpload() {
+interface CVUploadProps {
+  onFileUpload?: (fileName: string | null) => void;
+  onInfoConfirm?: (info: ExtractedInfo | null) => void;
+}
+
+export function CVUpload({ onFileUpload, onInfoConfirm }: CVUploadProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState(false);
@@ -174,6 +179,12 @@ export function CVUpload() {
       setExtractedInfo(null);
       setEditableInfo(null);
       setIsConfirmed(false);
+
+      // Notify parent about file upload
+      if (onFileUpload) {
+        onFileUpload(file.name);
+      }
+
       // Extract text from PDF
       await extractTextFromPDF(file);
     }
@@ -213,6 +224,14 @@ export function CVUpload() {
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
+
+    // Notify parent about file removal
+    if (onFileUpload) {
+      onFileUpload(null);
+    }
+    if (onInfoConfirm) {
+      onInfoConfirm(null);
+    }
   };
 
   const handleInfoChange = (field: keyof ExtractedInfo, value: string) => {
@@ -229,6 +248,11 @@ export function CVUpload() {
     if (editableInfo) {
       setExtractedInfo(editableInfo);
       setIsConfirmed(true);
+
+      // Notify parent about confirmed info
+      if (onInfoConfirm) {
+        onInfoConfirm(editableInfo);
+      }
     }
   };
 

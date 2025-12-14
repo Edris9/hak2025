@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { FileText, Loader2, Copy, Check } from 'lucide-react';
+import { FileText, Loader2, Copy, Check, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
@@ -19,13 +19,29 @@ interface Job {
 
 interface CoverLetterGeneratorProps {
   selectedJobs: Job[];
+  cvFileName?: string | null;
+  applicantInfo?: {
+    name: string;
+    email: string;
+    phone: string;
+  } | null;
+  recipientEmail?: string | null;
+  recipientName?: string | null;
 }
 
-export function CoverLetterGenerator({ selectedJobs }: CoverLetterGeneratorProps) {
+export function CoverLetterGenerator({
+  selectedJobs,
+  cvFileName,
+  applicantInfo,
+  recipientEmail,
+  recipientName
+}: CoverLetterGeneratorProps) {
   const [coverLetter, setCoverLetter] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [sent, setSent] = useState(false);
 
   const generateCoverLetter = async () => {
     if (selectedJobs.length === 0) {
@@ -76,6 +92,63 @@ export function CoverLetterGenerator({ selectedJobs }: CoverLetterGeneratorProps
     }
   };
 
+  const handleSendApplication = async () => {
+    if (!coverLetter) {
+      setError('Generera först ett personligt brev');
+      return;
+    }
+
+    if (!recipientEmail) {
+      setError('Ingen mottagare hittades för detta jobb');
+      return;
+    }
+
+    if (!cvFileName) {
+      setError('Ladda upp ditt CV först');
+      return;
+    }
+
+    if (!applicantInfo) {
+      setError('Fyll i dina kontaktuppgifter från CV:t');
+      return;
+    }
+
+    setSending(true);
+    setError(null);
+
+    try {
+      const response = await fetch('/api/send-application', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          recipientEmail,
+          recipientName,
+          jobTitle: selectedJobs[0]?.headline,
+          coverLetter,
+          cvFileName,
+          applicantName: applicantInfo.name,
+          applicantEmail: applicantInfo.email,
+          applicantPhone: applicantInfo.phone,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || 'Misslyckades att skicka ansökan');
+      }
+
+      setSent(true);
+      setTimeout(() => setSent(false), 5000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Ett fel uppstod');
+    } finally {
+      setSending(false);
+    }
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -101,30 +174,89 @@ export function CoverLetterGenerator({ selectedJobs }: CoverLetterGeneratorProps
           </div>
         )}
 
-        {/* Generate Button */}
-        <Button
-          onClick={generateCoverLetter}
-          disabled={selectedJobs.length === 0 || loading}
-          className="w-full"
-        >
-          {loading ? (
-            <>
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Genererar...
-            </>
-          ) : (
-            <>
-              <FileText className="h-4 w-4" />
-              Generera Personligt Brev
-            </>
-          )}
-        </Button>
+        {/* Action Buttons */}
+        <div className="flex gap-2">
+          <Button
+            onClick={generateCoverLetter}
+            disabled={selectedJobs.length === 0 || loading}
+            className="flex-1"
+            variant="outline"
+          >
+            {loading ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Genererar...
+              </>
+            ) : (
+              <>
+                <FileText className="h-4 w-4" />
+                Generera Brev
+              </>
+            )}
+          </Button>
+
+          <Button
+            onClick={handleSendApplication}
+            disabled={!coverLetter || !recipientEmail || !cvFileName || !applicantInfo || sending}
+            className="flex-1"
+            variant={sent ? "outline" : "default"}
+          >
+            {sending ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Skickar...
+              </>
+            ) : sent ? (
+              <>
+                <Check className="h-4 w-4" />
+                Skickat!
+              </>
+            ) : (
+              <>
+                <Send className="h-4 w-4" />
+                Skicka Ansökan
+              </>
+            )}
+          </Button>
+        </div>
+
+        {/* Success Message */}
+        {sent && (
+          <p className="text-sm text-green-600 dark:text-green-400 text-center">
+            Din ansökan har skickats till {recipientEmail}!
+          </p>
+        )}
 
         {/* Error */}
         {error && (
           <div className="text-sm text-destructive bg-destructive/10 p-3 rounded-lg">
             {error}
           </div>
+        )}
+
+        {/* Warning Messages */}
+        {!cvFileName && selectedJobs.length > 0 && (
+          <p className="text-sm text-amber-600 dark:text-amber-400 text-center">
+            ⚠️ Ladda upp ditt CV först
+          </p>
+        )}
+
+        {!applicantInfo && cvFileName && selectedJobs.length > 0 && (
+          <p className="text-sm text-amber-600 dark:text-amber-400 text-center">
+            ⚠️ Bekräfta dina kontaktuppgifter från CV:t
+          </p>
+        )}
+
+        {!coverLetter && cvFileName && applicantInfo && selectedJobs.length > 0 && (
+          <p className="text-sm text-amber-600 dark:text-amber-400 text-center">
+            ⚠️ Generera personligt brev först
+          </p>
+        )}
+
+        {!recipientEmail && coverLetter && (
+          <p className="text-sm text-amber-600 dark:text-amber-400 text-center">
+            ⚠️ Ingen kontaktperson hittades för detta jobb
+          </p>
         )}
 
         {/* Generated Cover Letter */}
