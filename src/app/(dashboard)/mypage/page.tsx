@@ -1,8 +1,22 @@
 'use client';
 
-import { CVUpload, JobsList } from '@/presentation/components/lemowork';
+import { useState } from 'react';
+import { CVUpload, JobsList, CoverLetterGenerator } from '@/presentation/components/lemowork';
+
+interface Job {
+  id: string;
+  headline: string;
+  employer?: {
+    name: string;
+  };
+  description?: {
+    text?: string;
+  };
+}
 
 export default function MyPage() {
+  const [selectedJobsForCoverLetter, setSelectedJobsForCoverLetter] = useState<Job[]>([]);
+
   return (
     <div className="p-6 space-y-6">
       <div>
@@ -11,9 +25,12 @@ export default function MyPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <CVUpload />
-        <JobsList />
+        <div className="space-y-6">
+          <CVUpload />
+          <CoverLetterGenerator selectedJobs={selectedJobsForCoverLetter} />
+        </div>
+        <JobsList onJobSelectionChange={setSelectedJobsForCoverLetter} />
       </div>
     </div>
-  )
+  );
 }

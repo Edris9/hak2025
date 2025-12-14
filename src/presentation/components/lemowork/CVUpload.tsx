@@ -1,12 +1,11 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import { Upload, FileText, X, CheckCircle2, User, Phone, Mail } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import * as pdfjsLib from 'pdfjs-dist';
 
 interface ExtractedInfo {
   name: string;
@@ -23,14 +22,6 @@ export function CVUpload() {
   const [isConfirmed, setIsConfirmed] = useState(false);
   const [isExtracting, setIsExtracting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  // Set up the worker for pdfjs
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      // Use local worker file for better reliability
-      pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
-    }
-  }, []);
 
   const extractInfoFromText = (text: string): ExtractedInfo => {
     // Extract email (standard email pattern)
@@ -106,18 +97,21 @@ export function CVUpload() {
   const extractTextFromPDF = async (file: File) => {
     setIsExtracting(true);
     try {
+      // Dynamic import of pdfjs-dist (only loads on client-side)
+      const pdfjsLib = await import('pdfjs-dist');
+
       // Ensure worker is set up
       if (typeof window !== 'undefined' && !pdfjsLib.GlobalWorkerOptions.workerSrc) {
         pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
       }
 
       const arrayBuffer = await file.arrayBuffer();
-      const loadingTask = pdfjsLib.getDocument({ 
+      const loadingTask = pdfjsLib.getDocument({
         data: arrayBuffer,
         useWorkerFetch: false,
         isEvalSupported: false,
       });
-      
+
       const pdf = await loadingTask.promise;
       let fullText = '';
       const textItems: Array<{ text: string; fontSize: number; y: number }> = [];
@@ -125,7 +119,7 @@ export function CVUpload() {
       // Extract text from first page with position info to find name
       const firstPage = await pdf.getPage(1);
       const textContent = await firstPage.getTextContent();
-      
+
       // Collect text items with their font sizes and positions
       textContent.items.forEach((item: any) => {
         if (item.str) {

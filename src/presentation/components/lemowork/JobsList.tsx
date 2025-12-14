@@ -32,6 +32,9 @@ interface Job {
   webpage_url?: string;
   employment_type?: string;
   remote?: boolean;
+  description?: {
+    text?: string;
+  };
 }
 
 interface JobsResponse {
@@ -43,6 +46,10 @@ interface JobsResponse {
     };
   };
   error?: string;
+}
+
+interface JobsListProps {
+  onJobSelectionChange?: (selectedJobs: Job[]) => void;
 }
 
 // Swedish regions (Län) and their municipalities (Orter)
@@ -66,7 +73,7 @@ const SWEDISH_REGIONS: Record<string, string[]> = {
   'Gotlands Län': ['Visby'],
 };
 
-export function JobsList() {
+export function JobsList({ onJobSelectionChange }: JobsListProps) {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -74,11 +81,14 @@ export function JobsList() {
   const [municipality, setMunicipality] = useState('');
   const [total, setTotal] = useState(0);
   const [showFilter, setShowFilter] = useState(false);
-  
+
   // Filter states
   const [selectedRegion, setSelectedRegion] = useState('');
   const [selectedMunicipalities, setSelectedMunicipalities] = useState<string[]>([]);
   const [selectedJobs, setSelectedJobs] = useState<string[]>([]);
+
+  // Selected job for cover letter (only one job can be selected)
+  const [selectedJobForCoverLetter, setSelectedJobForCoverLetter] = useState<string | null>(null);
 
   const fetchJobs = async () => {
     setLoading(true);
@@ -204,6 +214,18 @@ export function JobsList() {
     selectedMunicipalities.length > 0 ||
     selectedJobs.length > 0;
 
+  // Handle job selection for cover letter (only one job)
+  const handleJobSelect = (job: Job) => {
+    const newSelection = selectedJobForCoverLetter === job.id ? null : job.id;
+    setSelectedJobForCoverLetter(newSelection);
+
+    // Notify parent component
+    if (onJobSelectionChange) {
+      const selectedJobObjects = newSelection ? [job] : [];
+      onJobSelectionChange(selectedJobObjects);
+    }
+  };
+
   return (
     <>
       <Card>
@@ -261,17 +283,47 @@ export function JobsList() {
 
           {/* Jobs List */}
           {!loading && filteredJobs.length > 0 && (
-            <ScrollArea className="h-[600px] pr-4">
-              <div className="space-y-3">
-                {filteredJobs.map((job) => (
-                  <Card
-                    key={job.id}
-                    className="border-l-4 border-l-primary/30 hover:border-l-primary transition-colors"
-                  >
-                    <CardContent className="p-4">
-                      <h3 className="font-semibold text-base mb-2 line-clamp-2">
-                        {job.headline}
-                      </h3>
+            <>
+              {selectedJobForCoverLetter && (
+                <div className="bg-primary/10 p-3 rounded-lg border border-primary/20">
+                  <p className="text-sm font-medium">
+                    1 jobb valt för personligt brev
+                  </p>
+                </div>
+              )}
+              <ScrollArea className="h-[600px] pr-4">
+                <div className="space-y-3">
+                  {filteredJobs.map((job) => (
+                    <Card
+                      key={job.id}
+                      onClick={() => handleJobSelect(job)}
+                      className={`border-l-4 transition-colors cursor-pointer ${
+                        selectedJobForCoverLetter === job.id
+                          ? 'border-l-primary bg-primary/5'
+                          : 'border-l-primary/30 hover:border-l-primary'
+                      }`}
+                    >
+                      <CardContent className="p-4">
+                        <div className="flex items-start gap-3 mb-2">
+                          <div className="mt-1">
+                            <div
+                              className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                                selectedJobForCoverLetter === job.id
+                                  ? 'border-primary bg-primary'
+                                  : 'border-muted-foreground'
+                              }`}
+                            >
+                              {selectedJobForCoverLetter === job.id && (
+                                <div className="w-2 h-2 rounded-full bg-white" />
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-semibold text-base line-clamp-2">
+                              {job.headline}
+                            </h3>
+                          </div>
+                        </div>
 
                       <div className="space-y-1.5 text-sm text-muted-foreground">
                         {job.employer?.name && (
@@ -324,10 +376,11 @@ export function JobsList() {
                         </div>
                       )}
                     </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </ScrollArea>
+                    </Card>
+                  ))}
+                </div>
+              </ScrollArea>
+            </>
           )}
 
           {/* Empty State */}
