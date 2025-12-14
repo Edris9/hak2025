@@ -3,6 +3,11 @@ Uppgift:
 🔎 AF-API → ✍️ AI-anpassa CV & personligt brev (upload) → 📎 generera PDF → 📧 Gmail-API skickar ansökan
 
 
+
+
+
+
+
 # InFiNet Code - Next.js AI Workshop Template
 
 > *Crafting the future*
